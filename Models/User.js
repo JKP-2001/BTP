@@ -9,9 +9,10 @@ const userSchema = new mongoose.Schema({
     password:{type:String,required:true},
     projects_posted:[{type:mongoose.Schema.Types.ObjectId,default:[]}],
     is_banned:{type:Boolean,required:true,default:false},
+    role:{type:String,require:true,default:"prof"},
     is_admin:{type:Boolean,required:true,default:false},
     token:{type:String,default:"H"},
-    // seckey:{type:String,required:true,default:process.env.JWT_SECRET},
+    seckey:{type:String,required:true,default:process.env.JWT_SECRET},
 })
 
 const User = mongoose.model("User",userSchema);
