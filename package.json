@@ -22,6 +22,8 @@
     "mongoose": "^6.6.5",
     "nodemailer": "^6.8.0",
     "passport": "^0.6.0",
-    "passport-microsoft": "^1.0.0"
+    "passport-microsoft": "^1.0.0",
+    "url": "^0.11.0",
+    "xlsx": "^0.18.5"
   }
 }

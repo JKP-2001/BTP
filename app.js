@@ -23,6 +23,7 @@ const app = express();
 app.use(express.json());
 
 import mongoose from "mongoose";
+import Student from "./Models/Student.js";
 
 
 const url = "mongodb+srv://jkp6957:"+process.env.mongopass+"@cluster0.ncrzato.mongodb.net/?retryWrites=true&w=majority"
@@ -48,9 +49,10 @@ app.use("",msRoute);
 app.use("/student",student)
 app.use("/project",project);
 
-app.get("/",(req,res)=>{
+app.get("/",async (req,res)=>{
     if(req.user){
-        res.send(req.user);   
+        const student = await Student.findById(req.user._id);
+        res.send(student);   
     }
     else{
         res.send("Hey");

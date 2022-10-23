@@ -7,20 +7,44 @@ import Student from "../Models/Student.js";
 import User from "../Models/User.js";
 // import User from "../Models/User.js";
 
+import XLSX from "xlsx";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
 
-
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 
 const extract_projects = async (projects_array) => {
     var projects = [];
 
     for (var i = 0; i < projects_array.length; i++) {
-        let project = await Project.findById(projects_array[i]);
+        let project = await Project.findById(projects_array[i]).select("-password -token -seckey").lean();;
         projects.push(project);
     }
 
     return projects;
+}
+
+
+const intrestedPeople = async (arrayOfProjects) => {
+    var result = [];
+
+    for (let i = 0; i < arrayOfProjects.length; i++) {
+        const project = await Project.findById(arrayOfProjects[i]);
+        if (project) {
+            for (let j = 0; j < 2; j++) {
+                let people = await Student.findById(project.intrestedPeople[j]).select("-password -seckey -is_banned -is_admin -role -_id -projectName ");
+                let people2 = await Student.findById(project.intrestedPeople[j]).select("-password -seckey -is_banned -is_admin -role -_id -projectName -partner -token -__v");
+                const partner = await Student.findById(people.partner);
+                people2.partner_name = partner.name;
+                people2.project_name = project.title;
+                result.push(people2);
+            }
+        }
+    }
+
+    return result;
 }
 
 const newproject = async (req, res) => {
@@ -157,7 +181,7 @@ const updateProjectDetails = async (req, res) => {
 
 
 const deleteProject = async (req, res) => {
-   const user = await User.findOne({ email: req.user.id });
+    const user = await User.findOne({ email: req.user.id });
     const pId = req.params.id;
     const project = await Project.findById(pId);
 
@@ -263,36 +287,41 @@ const deselectProject = async (req, res) => {
     const pId = req.params.id;
     const project = await Project.findById(pId);
 
-
-
-
-    if (project.intrestedPeople.length === 0) {
-        res.status(400).json({ msg: "No Project Alloted Yet." });
-    }
-
-
-    else {
-        const User = req.user;
-        const user = await Student.findById(User._id)
-
-
-
-        if (String(user.projectName) !== String(project._id)) {
-            res.status(401).json({ msg: "This Project is not alloted to you." })
+    if (project) {
+        if (project.intrestedPeople.length === 0) {
+            res.status(400).json({ msg: "No Project Alloted Yet." });
         }
 
 
         else {
-            const partner = await Student.findById(user.partner);
-            const deltostudu1 = await Student.findByIdAndUpdate(user._id, { projectName: "000000000000000000000000", partner: "000000000000000000000000" })
-            const deltostudu2 = await Student.findByIdAndUpdate(partner._id, { projectName: "000000000000000000000000", partner: "000000000000000000000000" })
-            const deltointrestedpeople = await Project.findByIdAndUpdate(project._id, { $pull: { intrestedPeople: user._id } })
-            const deltointrestedpeople2 = await Project.findByIdAndUpdate(project._id, { $pull: { intrestedPeople: partner._id } })
-            res.status(200).json({ msg: "Success" });
+            const User = req.user;
+            const user = await Student.findById(User._id)
+
+
+
+            if (String(user.projectName) !== String(project._id)) {
+                res.status(401).json({ msg: "This Project is not alloted to you." })
+            }
+
+
+            else {
+                const partner = await Student.findById(user.partner);
+                const deltostudu1 = await Student.findByIdAndUpdate(user._id, { projectName: "000000000000000000000000", partner: "000000000000000000000000" })
+                const deltostudu2 = await Student.findByIdAndUpdate(partner._id, { projectName: "000000000000000000000000", partner: "000000000000000000000000" })
+                const deltointrestedpeople = await Project.findByIdAndUpdate(project._id, { $pull: { intrestedPeople: user._id } })
+                const deltointrestedpeople2 = await Project.findByIdAndUpdate(project._id, { $pull: { intrestedPeople: partner._id } })
+                res.status(200).json({ msg: "Success" });
+            }
+
+
         }
-
-
     }
+
+    else{
+        res.status(405).json({msg:"Failure"});
+    }
+
+
 }
 
 
@@ -313,5 +342,27 @@ const getPostedProjects = async (req, res) => {
 
 
 
+const downLoadDetails = async (req, res, next) => {
+    var wb = XLSX.utils.book_new();
+    const user = req.params.email;
+    const isValidUser = await User.findOne({ email: user });
 
-export { newproject, updateProjectDetails, deleteProject, getOwnerDeltails, getAllItems, selectProject, deselectProject, getPostedProjects };
+    const arrayOfProjects = isValidUser.projects_posted;
+
+
+    var details = await intrestedPeople(arrayOfProjects);
+    var temp = JSON.stringify(details);
+    temp = JSON.parse(temp);
+    var ws = XLSX.utils.json_to_sheet(temp);
+
+    var down = __dirname + `/public/student_data.xlsx`;
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet 1");
+    XLSX.writeFile(wb, down);
+    res.download(down);
+    // res.status(200).send(details);
+}
+
+
+
+
+export { newproject, updateProjectDetails, deleteProject, getOwnerDeltails, getAllItems, selectProject, deselectProject, getPostedProjects, downLoadDetails };

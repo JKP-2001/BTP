@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
-import { deleteProject, deselectProject, getAllItems, getOwnerDeltails, getPostedProjects, newproject, selectProject, updateProjectDetails } from "../Controllers/projectController.js";
+import { deleteProject, deselectProject,  getAllItems, getOwnerDeltails, getPostedProjects, newproject, selectProject, updateProjectDetails, downLoadDetails } from "../Controllers/projectController.js";
 const router = express.Router();
 
 import fetchuser from "../Middlewares/fetchuser.js";
@@ -16,6 +16,7 @@ router.get("/allprojects",getAllItems);
 router.get("/projectaddition/:id/:email",fetchstudent,selectProject);
 router.get("/deselectproject/:id",fetchstudent,deselectProject)
 router.get("/projectsposted",fetchuser,getPostedProjects)
+router.get("/intrestedpeople/:email",downLoadDetails);
 
 const project = router
 
